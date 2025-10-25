@@ -63,7 +63,7 @@ void *autoUberquerung(void *car)
     while (uberquerung < maxUberquerung)
     {
        
-        usleep(randomNumber()*1);
+        usleep(randomNumber()*10);
         if (randomNumber() == 5)
         {
             autoAufBruecke++;
