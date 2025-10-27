@@ -76,7 +76,7 @@ void *autoUberquerung(void *car)
             for (int distance = 0; distance < 100; distance += 25)
             {
                 
-                usleep(randomNumber()*1);
+                usleep(randomNumber()*5);
                 if (autoAufBruecke > 1)
                 {
                     unfaelle++;
@@ -102,7 +102,7 @@ void *autoUberquerung(void *car)
             
         }
         
-    usleep(randomNumber()*1); 
+    usleep(randomNumber()*10); 
     }
 }
 
