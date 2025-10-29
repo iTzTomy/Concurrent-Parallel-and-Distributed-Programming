@@ -166,11 +166,27 @@ void *autoUberquerungLock(void *car)
     long tid;
     tid = (long) car;
     
-    while (uberquerung < maxUberquerung)
+    while (true)
     {
-       
-       
-        usleep(randomNumber()*1);
+        // lock 
+        if (_lock[tid] == 0)
+        {
+            lock(tid);
+        }
+
+        if (uberquerung >= maxUberquerung)
+        {
+            // unlock
+            unlock(tid);
+            break; 
+        }
+        
+        // unlock
+        unlock(tid);
+            
+        
+        //usleep(randomNumber()*1);
+        
         if (randomNumber() == 5)
         {
             // check for Lock
@@ -185,12 +201,14 @@ void *autoUberquerungLock(void *car)
             for (int distance = 0; distance < 100; distance += 25)
             {
                 
-                usleep(randomNumber()*1);
+                //usleep(randomNumber()*1);
                 if (autoAufBruecke > 1)
                 {
                     unfaelle++;
                     printf("Crash! \n");
                     crash = true;
+                    // unlock
+                    unlock(tid);
                     break;
                 }
                 
@@ -207,12 +225,14 @@ void *autoUberquerungLock(void *car)
             else
             {
                 crash = false;
-                autoAufBruecke--;    
+                autoAufBruecke--; 
+                // unlock
+                unlock(tid);   
             }            
             
         }
-        
-    usleep(randomNumber()*1); 
+    
+        //usleep(randomNumber()*1); 
     }
 }
 
@@ -248,14 +268,25 @@ int unlockPeterson(long tid)
     level[tid] = 0;
     return 0;    
 }
+
 void *autoUberquerungLockP(void *car)
 {
     long tid;
     tid = (long) car;
     
-    while (uberquerung < maxUberquerung)
-    {
-           
+    while (true)
+    {   
+        lockPeterson(tid);
+        if(uberquerung >= maxUberquerung)
+        {
+            // unlock
+            unlockPeterson(tid);
+            break;
+        }
+
+        // unlock
+        unlockPeterson(tid);
+        
         usleep(randomNumber()*1);
         if (randomNumber() == 5)
         {
@@ -273,6 +304,8 @@ void *autoUberquerungLockP(void *car)
                     unfaelle++;
                     printf("Crash! \n");
                     crash = true;
+                    // unlock
+                    unlockPeterson(tid);
                     break;
                 }
                 
@@ -291,6 +324,8 @@ void *autoUberquerungLockP(void *car)
             {
                 crash = false;
                 autoAufBruecke--;
+                // unlock
+                unlockPeterson(tid);
                 
             }      
             
