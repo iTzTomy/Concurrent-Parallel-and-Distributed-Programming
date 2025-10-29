@@ -169,10 +169,7 @@ void *autoUberquerungLock(void *car)
     while (true)
     {
         // lock 
-        if (_lock[tid] == 0)
-        {
-            lock(tid);
-        }
+        lock(tid);
 
         if (uberquerung >= maxUberquerung)
         {
@@ -181,27 +178,14 @@ void *autoUberquerungLock(void *car)
             break; 
         }
         
-        // unlock
-        unlock(tid);
-            
-        
-        //usleep(randomNumber()*1);
-        
         if (randomNumber() == 5)
         {
-            // check for Lock
-            // Lock urself
-            if (_lock[tid] == 0)
-            {
-                lock(tid);
-            }
 
             autoAufBruecke++;
 
             for (int distance = 0; distance < 100; distance += 25)
             {
                 
-                //usleep(randomNumber()*1);
                 if (autoAufBruecke > 1)
                 {
                     unfaelle++;
@@ -232,7 +216,6 @@ void *autoUberquerungLock(void *car)
             
         }
     
-        //usleep(randomNumber()*1); 
     }
 }
 
@@ -276,15 +259,16 @@ void *autoUberquerungLockP(void *car)
     tid = (long)car;
 
     while (true)
-    {
+    {   
+        // lock
         lockPeterson(tid);
+
         if (uberquerung >= maxUberquerung)
         {
-	    //unlock
+	        //unlock
             unlockPeterson(tid);
             break;
         }
-
 
         if (randomNumber() == 5)
         {
@@ -297,6 +281,8 @@ void *autoUberquerungLockP(void *car)
                     unfaelle++;
                     printf("Crash!\n");
                     crash = true;
+                    //unlock
+                    unlockPeterson(tid);
                     break;
                 }
             }
