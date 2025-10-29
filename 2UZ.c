@@ -313,6 +313,7 @@ Aufgabe 4
 1. Keine Locks:
 Da wir keine Locks haben die verhindern, dass mehr als ein Auto (Thread) auf der Brücke ist, haben wir viele crashes.
 Deshalb läuft das Programm auch viel länger, da es länger braucht um die Anzahl der geforderten Überquerungen zu erreichen.
+Es kommt manchmal auch zu crash loops, da wir keine Locks haben.
 
 Maßnahme:
 Implementiere Twofold locking oder POSIX Mutex, Dekker, Peterson, Lamport locking
