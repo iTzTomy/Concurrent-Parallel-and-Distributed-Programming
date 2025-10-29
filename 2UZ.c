@@ -31,8 +31,8 @@ bool crash = false;
 int level[NUM_THREADS];
 int last[NUM_THREADS];
 
-void lockPeterson(long tid);
-void unlockPeterson(long tid);
+int lockPeterson(long tid);
+int unlockPeterson(long tid);
 
 // Twofold Locking
 char _lock[NUM_THREADS];
@@ -218,7 +218,7 @@ void *autoUberquerungLock(void *car)
 
 // 3. Aufgabe
 
-void lockPeterson(long tid)
+int lockPeterson(long tid)
 {
     int i, j, loop;
 
@@ -243,7 +243,7 @@ void lockPeterson(long tid)
     return 0;
 }
 
-void unlockPeterson(long tid)
+int unlockPeterson(long tid)
 {
     level[tid] = 0;
     return 0;    
