@@ -166,27 +166,11 @@ void *autoUberquerungLock(void *car)
     long tid;
     tid = (long) car;
     
-    while (true)
+    while (uberquerung < maxUberquerung)
     {
-        // lock 
-        if (_lock[tid] == 0)
-        {
-            lock(tid);
-        }
-
-        if (uberquerung >= maxUberquerung)
-        {
-            // unlock
-            unlock(tid);
-            break; 
-        }
-        
-        // unlock
-        unlock(tid);
-            
-        
-        //usleep(randomNumber()*1);
-        
+       
+       
+        usleep(randomNumber()*1);
         if (randomNumber() == 5)
         {
             // check for Lock
@@ -201,14 +185,12 @@ void *autoUberquerungLock(void *car)
             for (int distance = 0; distance < 100; distance += 25)
             {
                 
-                //usleep(randomNumber()*1);
+                usleep(randomNumber()*1);
                 if (autoAufBruecke > 1)
                 {
                     unfaelle++;
                     printf("Crash! \n");
                     crash = true;
-                    // unlock
-                    unlock(tid);
                     break;
                 }
                 
@@ -225,14 +207,12 @@ void *autoUberquerungLock(void *car)
             else
             {
                 crash = false;
-                autoAufBruecke--; 
-                // unlock
-                unlock(tid);   
+                autoAufBruecke--;    
             }            
             
         }
-    
-        //usleep(randomNumber()*1); 
+        
+    usleep(randomNumber()*1); 
     }
 }
 
@@ -269,71 +249,55 @@ int unlockPeterson(long tid)
     return 0;    
 }
 
+
 void *autoUberquerungLockP(void *car)
 {
     long tid;
-    tid = (long) car;
-    
+    tid = (long)car;
+
     while (true)
-    {   
+    {
         lockPeterson(tid);
-        if(uberquerung >= maxUberquerung)
+        if (uberquerung >= maxUberquerung)
         {
-            // unlock
+	    //unlock
             unlockPeterson(tid);
             break;
         }
 
-        // unlock
-        unlockPeterson(tid);
-        
-        usleep(randomNumber()*1);
+
         if (randomNumber() == 5)
         {
-            // lock
-            lockPeterson(tid);
-            
             autoAufBruecke++;
 
             for (int distance = 0; distance < 100; distance += 25)
             {
-                
-                usleep(randomNumber()*1);
                 if (autoAufBruecke > 1)
                 {
                     unfaelle++;
-                    printf("Crash! \n");
+                    printf("Crash!\n");
                     crash = true;
-                    // unlock
-                    unlockPeterson(tid);
                     break;
                 }
-                
             }
 
-            if(crash == false)
+            if (crash == false)
             {
                 autoAufBruecke--;
                 uberquerung++;
                 printf("uberquerung \n");
-                // unlock
-                unlockPeterson(tid);
-                
             }
             else
             {
                 crash = false;
                 autoAufBruecke--;
-                // unlock
-                unlockPeterson(tid);
-                
-            }      
-            
-            
+            }
         }
-        
-    usleep(randomNumber()*1); 
+
+        unlockPeterson(tid);
     }
+
+    return 0;
 }
 
 
