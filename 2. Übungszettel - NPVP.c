@@ -3,200 +3,54 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <time.h>
-#include <unistd.h>
 
-// 2. Übungszettel - NPVP
-// Hristo Popovski & Tomy Duong 
+#define NUM_THREADS 5  // you can change this
 
-// 1. Aufgabe
-// Idee: Zwei Autos, Random Nummer zwischen 1 und 10, wenn Random Nummer = 5, dann geht das Auto auf die Brücke
-// z.B. Auto1 bekommt Random Nummer = 5, wir setzen länge = 0, bei jeder Iteration fährt das Auto weiter (Länge +25)
-// bekommt Auto2 aber nun auch Random Nummer = 5 und autoAufBruecke = true, dann Unfälle +=1
-// wenn nicht, mache weiter, wenn Auto1 Länge = 100 hat, fertig und setze Überführungen +=1
-
-#define NUM_THREADS 5 // für Aufgabe 1 & 2 setze NUM_THREAD = 2, für Aufabe 3 kann es beliebig sein
-
-//shared data
 int unfaelle = 0;
 int autoAufBruecke = 0;
-int maxUberquerung = 100000;
 int uberquerung = 0;
 bool crash = false;
+int maxUberquerung = 100000;
 
-//Peterson
+
 int level[NUM_THREADS];
 int last[NUM_THREADS];
 
-void lockPeterson(long tid);
-void unlockPeterson(long tid);
+int lockPeterson(long tid);
+int unlockPeterson(long tid);
+int randomNumber();
 
-// Twofold Locking
-char _lock[NUM_THREADS];
-
-void *autoUberquerung(void *car);
-void *autoUberquerungLock(void *car);
 void *autoUberquerungLockP(void *car);
 
 
-int randomNumber();
-
-int main(void) 
+int main(void)
 {
-    srand(time(NULL));
-    
+    srand((unsigned int)time(NULL));
+
+    // Initialize levels
+    for (int i = 0; i < NUM_THREADS; i++)
+        level[i] = 0;
+
     pthread_t car[NUM_THREADS];
 
-    // erstellt die Threads
-    for (int t = 0; t < NUM_THREADS; t++)
-    {   
-        pthread_create(&car[t], NULL, autoUberquerungLockP, (void*)t);    // für Aufgabe 2 ersetzte autoUberquerung mit autoUberquerungLock 
-    }                                                               // für Aufgabe 3 ersetze autoUberquerung mit autoUberquerungLockP
+    for (long t = 0; t < NUM_THREADS; t++)
+        pthread_create(&car[t], NULL, autoUberquerungLockP, (void *)t);
 
-    // Wartet, bis alle Threads beendet sind
     for (int t = 0; t < NUM_THREADS; t++)
-    {
         pthread_join(car[t], NULL);
-    }   
 
-    printf("Crashes: %d\n", unfaelle/2);        // da Auto1 und Auto2 crashen, aber zusammen es nur 1 crash ist, durch zwei teilen
-    printf("uberquerungen: %d\n",uberquerung);
-        
+    printf("\nCrashes: %d\n", unfaelle / 2);
+    printf("Ueberquerungen: %d\n", uberquerung);
+
     return 0;
-    
 }
-
-void *autoUberquerung(void *car)
-{
-    while (uberquerung < maxUberquerung)
-    {
-       
-        usleep(randomNumber()*10);
-        if (randomNumber() == 5)
-        {
-            autoAufBruecke++;
-
-            for (int distance = 0; distance < 100; distance += 25)
-            {
-                
-                usleep(randomNumber()*5);
-                if (autoAufBruecke > 1)
-                {
-                    unfaelle++;
-                    printf("Crash! \n");
-                    crash = true;
-                    break;
-                }
-                
-            }
-
-            if(crash == false)
-            {
-                autoAufBruecke--;
-                uberquerung++;
-                printf("uberquerung \n");
-            }
-            else
-            {
-                crash = false;
-                autoAufBruecke--;
-            }      
-            
-            
-        }
-        
-    usleep(randomNumber()*10); 
-    }
-}
-
 
 int randomNumber()
 {
-    int r = (rand() % 10)+1;  // 1..10
-   // printf("%d\n", r);
-    return r;
+    return (rand() % 10) + 1;
 }
 
-
-// 2. Aufgabe 
-
-int lock(long tid)
-{
-    _lock[tid] = 1;
-
-    while (_lock[NUM_THREADS - 1 - tid])
-    {
-        _lock[tid] = 0;
-        usleep(randomNumber()*1);
-        _lock[tid] = 1;
-    }
-    return 0;
-}
-
-int unlock (long tid)
-{
-    _lock[tid] = 0;
-    return 0;
-}
-
-
-void *autoUberquerungLock(void *car)
-{
-    long tid;
-    tid = (long) car;
-    
-    while (uberquerung < maxUberquerung)
-    {
-       
-       
-        usleep(randomNumber()*1);
-        if (randomNumber() == 5)
-        {
-            // check for Lock
-            // Lock urself
-            if (_lock[tid] == 0)
-            {
-                lock(tid);
-            }
-
-            autoAufBruecke++;
-
-            for (int distance = 0; distance < 100; distance += 25)
-            {
-                
-                usleep(randomNumber()*1);
-                if (autoAufBruecke > 1)
-                {
-                    unfaelle++;
-                    printf("Crash! \n");
-                    crash = true;
-                    break;
-                }
-                
-            }
-
-            if(crash == false)
-            {
-                autoAufBruecke--;
-                uberquerung++;
-                printf("uberquerung \n");
-                // unlock
-                unlock(tid);
-            }
-            else
-            {
-                crash = false;
-                autoAufBruecke--;    
-            }            
-            
-        }
-        
-    usleep(randomNumber()*1); 
-    }
-}
-
-// 3. Aufgabe
-
-void lockPeterson(long tid)
+int lockPeterson(long tid)
 {
     int i, j, loop;
 
@@ -221,82 +75,59 @@ void lockPeterson(long tid)
     return 0;
 }
 
-void unlockPeterson(long tid)
+int unlockPeterson(long tid)
 {
     level[tid] = 0;
     return 0;    
 }
+
+
 void *autoUberquerungLockP(void *car)
 {
     long tid;
-    tid = (long) car;
-    
-    while (uberquerung < maxUberquerung)
+    tid = (long)car;
+
+    while (true)
     {
-           
-        usleep(randomNumber()*1);
+        lockPeterson(tid);
+        if (uberquerung >= maxUberquerung)
+        {
+	    //unlock
+            unlockPeterson(tid);
+            break;
+        }
+
+
         if (randomNumber() == 5)
         {
-            // lock
-            lockPeterson(tid);
-            
             autoAufBruecke++;
 
             for (int distance = 0; distance < 100; distance += 25)
             {
-                
-                usleep(randomNumber()*1);
                 if (autoAufBruecke > 1)
                 {
                     unfaelle++;
-                    printf("Crash! \n");
+                    printf("Crash!\n");
                     crash = true;
                     break;
                 }
-                
             }
 
-            if(crash == false)
+            if (crash == false)
             {
                 autoAufBruecke--;
                 uberquerung++;
                 printf("uberquerung \n");
-                // unlock
-                unlockPeterson(tid);
-                
             }
             else
             {
                 crash = false;
                 autoAufBruecke--;
-                
-            }      
-            
-            
+            }
         }
-        
-    usleep(randomNumber()*1); 
+
+        unlockPeterson(tid);
     }
+
+    return 0;
 }
-
-
-/*
-Aufgabe 4
-
-1. Keine Locks:
-Da wir keine Locks haben die verhindern, dass mehr als ein Auto (Thread) auf der Brücke ist, haben wir viele crashes.
-
-Maßnahme:
-Implementiere Twofold locking oder POSIX Mutex, Dekker, Peterson, Lamport locking
-
-2. Twofold Lock with Mutual Precedence:
-Funktioniert gut mit zwei Autos (Threads), etwas langsam, aber keine crashes.
-Wenn wir mehr als zwei Autos (Threads) hinzufügen, kommt es zu einem Deadlock, da Twofold Lock with Mutual Precedence
-nur für 2 Autos (Threads) funktioniert. 
-
-Maßnahme:
-Implementiere POSIX Mutex locking oder Dekker, Peterson, Lamport
-
-3. Multiple Locks with Mutual Access – Peterson
-Funktioniert mit beliebiger Anzahl von Autos (Threads), keine Deadlocks durch, Programm läuft auch schneller.
-*/ 
