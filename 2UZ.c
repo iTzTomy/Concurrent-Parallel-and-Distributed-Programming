@@ -177,12 +177,10 @@ void *autoUberquerungLock(void *car)
             unlock(tid);
             break; 
         }
-        // unlock
-        unlock(tid);
+        
         if (randomNumber() == 5)
         {
-            // lock 
-            lock(tid);
+
             autoAufBruecke++;
 
             for (int distance = 0; distance < 100; distance += 25)
