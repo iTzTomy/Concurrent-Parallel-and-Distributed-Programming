@@ -269,9 +269,12 @@ void *autoUberquerungLockP(void *car)
             unlockPeterson(tid);
             break;
         }
-
+        //unlock
+        unlockPeterson(tid);
         if (randomNumber() == 5)
         {
+            // lock
+            lockPeterson(tid);
             autoAufBruecke++;
 
             for (int distance = 0; distance < 100; distance += 25)
