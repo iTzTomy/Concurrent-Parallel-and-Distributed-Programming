@@ -16,7 +16,7 @@
 
 #define NUM_THREADS 5 
 
-//shared data
+// shared data
 int unfaelle = 0;
 int autoAufBruecke = 0;
 int maxUberquerung = 100000;
@@ -127,10 +127,10 @@ int randomNumber()
 
 
 
-/*2. Aufgabe 
+// 2. & 3. Aufgabe in der PDF
 
 
 
 
-*/
+
 
