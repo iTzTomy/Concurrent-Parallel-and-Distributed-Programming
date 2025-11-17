@@ -101,7 +101,7 @@ int main(void)
     sem_destroy(&empty);
     sem_destroy(&full);
 
-    printf("&d Items Produced and &d Items consumed. \n", produced_count, consumed_count)
+    printf("&d Items Produced and &d Items consumed. \n", produced_count, consumed_count);
 
     return 0;
 
@@ -157,8 +157,8 @@ int main(void)
     sem_destroy(&mutex);
     sem_destroy(&empty);
 
-    printf("&d Items Produced and &d Items consumed. \n", produced_count, consumed_count)
-    
+    printf("&d Items Produced and &d Items consumed. \n", produced_count, consumed_count);
+
     return 0;
 
 #else
