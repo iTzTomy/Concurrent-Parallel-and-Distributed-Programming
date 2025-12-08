@@ -165,11 +165,9 @@ void tempDiffStation(const char *fileName)
     char *suffix = strstr(shortName, "_2022");
     if (suffix) *suffix = '\0';
 
-    char renamedFile[300];
-    snprintf(renamedFile, sizeof(renamedFile), "%s_TEMP_DIFF.csv", shortName);
-    rename(tempDiffFileName, renamedFile);
+    snprintf(tempDiffFileName, sizeof(tempDiffFileName), "%s_TEMP_DIFF.csv", shortName);
 
-    printf("Temp-Diff gespeichert in %s\n", renamedFile);
+    printf("Temp-Diff gespeichert in %s\n", tempDiffFileName);
 }
 
 float tempDiff(WetterStation *current, WetterStation *pred)
