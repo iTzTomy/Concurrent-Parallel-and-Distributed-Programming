@@ -146,7 +146,7 @@ void tempDiffStation(const char *fileName)
 
             if (count >= Print) 
             {
-                printf("Printed %d",count);
+                // printf("Printed %d",count); (für Debug)
                 break;
             }
         }
@@ -352,7 +352,7 @@ void mergeCSV (const char *station)
 
     if(!fTDiff || !fMean)
     {
-        printf("%s fehlt, merge unmoeglich", station);
+        printf("%s fehlt, merge unmoeglich \n", station);
         if(fTDiff)
         {
             fclose(fTDiff);
@@ -476,7 +476,7 @@ int main(void)
     double end = omp_get_wtime();
     printf("Zeit: %f\n", end - start);
     
-    printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.");
+    printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.\n");
     return 0;
 
 #elif Aufgabe ==  2
@@ -564,7 +564,7 @@ int main(void)
     double end = omp_get_wtime();
     printf("Zeit: %f\n", end - start);
 
-    printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.");
+    printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.\n");
     return 0;
     
 
