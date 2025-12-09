@@ -1,8 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
 #include <omp.h>
-#include <stdlib.h>
 
 // 7. Übungszettel - NPVP
 // Hristo Popovski & Tomy Duong
@@ -90,8 +90,13 @@ void tempDiffStation(const char *fileName)
         return;
     }
 
-    // Ausgabedatei erzeugen
-    FILE *tempDiffFile = fopen(tempDiffFileName, "w");
+    // Ausgabedatei erzeugen (kritische Sektion)
+
+    FILE *tempDiffFile = NULL;
+    #pragma omp critical
+    {
+        tempDiffFile = fopen(tempDiffFileName, "w");
+    }
 
     if (!tempDiffFile) {
         printf("Error: Datei kann nicht erstellt werden!\n");
@@ -147,7 +152,7 @@ void tempDiffStation(const char *fileName)
 
             if (count >= Print) 
             {
-                printf("Printed %d",count);
+                // printf("Printed %d",count); (für Debug)
                 break;
             }
         }
@@ -162,17 +167,17 @@ void tempDiffStation(const char *fileName)
     char shortName[200];
     strcpy(shortName, fileName);
     char *firstUnderscore = strchr(shortName, '_');
-    if (firstUnderscore) 
-    {
-        size_t len = strlen(firstUnderscore + 1) + 1;
-        memmove(shortName, firstUnderscore + 1, len);
-    }
+    if (firstUnderscore) memmove(shortName, firstUnderscore + 1, strlen(firstUnderscore));
     char *suffix = strstr(shortName, "_2022");
     if (suffix) *suffix = '\0';
 
     char renamedFile[300];
     snprintf(renamedFile, sizeof(renamedFile), "%s_TEMP_DIFF.csv", shortName);
-    rename(tempDiffFileName, renamedFile);
+
+#pragma omp critical
+    {
+        rename(tempDiffFileName, renamedFile); // kritische Sektion
+    }
 
     printf("Temp-Diff gespeichert in %s\n", renamedFile);
 }
@@ -295,11 +300,7 @@ void rechneMittelwert(const char *station)
             char fname[200];
             snprintf(fname, sizeof(fname), "%s_TEMP_DIFF.csv", neighbors[i]);
             files[i] = fopen(fname, "r");
-            if (files[i]) 
-            {
-                char headerbuf[300];
-                fgets(headerbuf, sizeof(headerbuf), files[i]); // Header überspringen
-            }
+            if (files[i]) fgets(fname, sizeof(fname), files[i]); // Header überspringen
         }
     }
 
@@ -311,8 +312,7 @@ void rechneMittelwert(const char *station)
     fprintf(out, "Date	      Time       MeanTemperature\n");
 
     char line[300];
-    char baseHeader[300];
-    fgets(baseHeader, sizeof(baseHeader), base); // Header überspringen
+    fgets(line, sizeof(line), base); // Header überspringen
 
     while (fgets(line, sizeof(line), base)) {
         char date[20], time[20];
@@ -362,7 +362,7 @@ void mergeCSV (const char *station)
 
     if(!fTDiff || !fMean)
     {
-        printf("%s fehlt, merge unmoeglich", station);
+        printf("%s fehlt, merge unmoeglich \n", station);
         if(fTDiff)
         {
             fclose(fTDiff);
@@ -443,6 +443,10 @@ Und am Ende 3.: Wir können nun die jewilige _TEMP_DIFF.csv & _NEIGHBOUR_MEAN.cs
 int main(void)
 {
 #if Aufgabe ==  1
+
+    // tracke böntigte Zeit für Aufgabe 3
+    double start = omp_get_wtime();
+
     DIR *d;
     struct dirent *dir;
 
@@ -466,11 +470,7 @@ int main(void)
             char station[200];
             strcpy(station, dir->d_name);
             char *firstUnderscore = strchr(station, '_');
-            if (firstUnderscore) 
-            {
-                size_t len = strlen(firstUnderscore + 1) + 1;
-                memmove(station, firstUnderscore + 1, len);
-            }
+            if (firstUnderscore) memmove(station, firstUnderscore + 1, strlen(firstUnderscore));
             char *suffix = strstr(station, "_2022");
             if (suffix) *suffix = '\0';
 
@@ -483,10 +483,17 @@ int main(void)
 
     closedir(d);
 
-    printf("Output CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.");
+    double end = omp_get_wtime();
+    printf("Zeit: %f\n", end - start);
+    
+    printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.\n");
     return 0;
 
 #elif Aufgabe ==  2
+
+    // tracke böntigte Zeit für Aufgabe 3
+    double start = omp_get_wtime();
+
     DIR *d;
     struct dirent *dir;
 
@@ -496,14 +503,9 @@ int main(void)
         return 1;
     }
 
-    int capacity = 16;
-    char **files = malloc(capacity * sizeof(char*));
-    char **stations = malloc(capacity * sizeof(char*));
-    if (!files || !stations)
-    {
-        fprintf(stderr, "Memory allocation failed\n");
-        return 1;
-    }
+    const int MAXFILES = 14;
+    char *files[MAXFILES];
+    char *stations[MAXFILES];    
     int fileCount = 0;
 
     // Durchlaufe alle Dateien im aktuellen Ordner
@@ -513,18 +515,6 @@ int main(void)
             strstr(dir->d_name, "_NEIGHBOUR_MEAN.csv") == NULL &&
             strstr(dir->d_name, "_FINAL.csv") == NULL)
         {
-
-            if (fileCount >= capacity) {
-                capacity *= 2;
-                files = realloc(files, capacity * sizeof(char*));
-                stations = realloc(stations, capacity * sizeof(char*));
-                if (!files || !stations) {
-                    fprintf(stderr, "Memory reallocation failed\n");
-                    closedir(d);
-                    return 1;
-                }
-            }
-
             // Anstatt jede Datei direkt zu verarbeiten speichern wir diese 
             files[fileCount] = strdup(dir->d_name);
             
@@ -534,11 +524,7 @@ int main(void)
             char station[200];
             strcpy(station, dir->d_name);
             char *firstUnderscore = strchr(station, '_');
-            if (firstUnderscore)
-            {
-                size_t len = strlen(firstUnderscore + 1) + 1;
-                memmove(station, firstUnderscore + 1, len);
-            }
+            if (firstUnderscore) memmove(station, firstUnderscore + 1, strlen(firstUnderscore));
             char *suffix = strstr(station, "_2022");
             if (suffix) *suffix = '\0';
 
@@ -546,6 +532,7 @@ int main(void)
 
 
             fileCount++;
+            if (fileCount >= MAXFILES) break;
         }
     }
     closedir(d);
@@ -583,6 +570,12 @@ int main(void)
         mergeCSV(stations[i]);
         
     }
+
+    double end = omp_get_wtime();
+    printf("Zeit: %f\n", end - start);
+
+    printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.\n");
+    return 0;
     
 
 #else
