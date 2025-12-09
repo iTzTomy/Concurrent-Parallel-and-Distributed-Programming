@@ -519,7 +519,7 @@ int main(void)
     }
 
     // 1. Erzeuge alle _TEMP_DIFF.csv für jede Station gleichzeitig Parallel
-    #pragma omp parallel for schedule(dynamic)
+    #pragma omp parallel for 
     for (int i = 0; i < fileCount; i++)
     {
         printf(">>> Thread %d Verarbeitet die Datei: %s \n", omp_get_thread_num(), files[i]);
@@ -527,7 +527,7 @@ int main(void)
     }
 
     // 2. Erzeuge nun alle _NEIGHBOUR_MEAN.csv für jede Station gleichzeitig Parallel
-    #pragma omp parallel for schedule(dynamic)
+    #pragma omp parallel for 
     for (int i = 0; i < fileCount; i++)
     {
         printf(">>> Thread %d berechnet Mittelwert: %s \n", omp_get_thread_num(), stations[i]);
@@ -535,7 +535,7 @@ int main(void)
     }
 
     // 3. Merge nun die _TEMP_DIFF.csv & _NEIGHBOUR_MEAN.csv jeder Stationen zu _FINAL.csv für jede Station gleichzeitig Parallel
-    #pragma omp parallel for schedule(dynamic)
+    #pragma omp parallel for 
     for (int i = 0; i < fileCount; i++)
     {
         printf(">>> Thread %d Merges: %s \n", omp_get_thread_num(), stations[i]);
