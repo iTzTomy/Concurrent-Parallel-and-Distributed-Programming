@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,17 +11,24 @@
 // 1.1.:
 typedef struct {
         int jahr;
-        int monat; 
+        int monat;
         int tag;
         int stunde;
         int minute;
         float temperatur;
         float tempDiff;
-}WetterStation;
+} WetterStation;
 
 float tempDiff(WetterStation *current, WetterStation *pred);
 
-void tempDiffStation(const char *fileName)
+/*
+ * tempDiffStation
+ * fileName: original input filename (z.B. "02_Gatow-1_2022.csv")
+ * station: cleaned station name used for outputs (z.B. "Gatow-1")
+ *
+ * Produziert direkt: "<station>_TEMP_DIFF.csv"
+ */
+void tempDiffStation(const char *fileName, const char *station)
 {
     char csvFormat[200];
 
@@ -63,7 +71,7 @@ void tempDiffStation(const char *fileName)
     }
     else if (strstr(fileName, "Messturm-2") != NULL) {
         // NO TEMP AVAILABLE
-        printf("Keine Temperatur verfuegbar fuer Station %s", fileName);
+        printf("Keine Temperatur verfuegbar fuer Station %s\n", fileName);
         return;
     }
     else if (strstr(fileName, "Moabit-1") != NULL) {
@@ -74,32 +82,26 @@ void tempDiffStation(const char *fileName)
         strcpy(csvFormat, "%d %d %d %d %d %*d %*d %*d %f");
     }
 
-    // Ausgabedatei-Namen erzeugen
+    // Ausgabedatei-Namen erzeugen (mit cleaned station name, kein rename später)
     char tempDiffFileName[300];
-    strcpy(tempDiffFileName, fileName);
-    char *ext = strstr(tempDiffFileName, ".csv");
-    if (ext) *ext = '\0';
-    snprintf(tempDiffFileName, sizeof(tempDiffFileName), "%s_TEMP_DIFF.csv", tempDiffFileName);
+    snprintf(tempDiffFileName, sizeof(tempDiffFileName), "%s_TEMP_DIFF.csv", station);
 
     // Eingabedatei öffnen
-    FILE *inputFile;
-    inputFile = fopen(fileName, "r");
-
+    FILE *inputFile = fopen(fileName, "r");
     if (!inputFile) {
-        printf("Error: Datei kann nicht geoeffnet werden!\n");
+        printf("Error: Datei kann nicht geoeffnet werden: %s\n", fileName);
         return;
     }
 
-    // Ausgabedatei erzeugen (kritische Sektion)
-
+    // Ausgabedatei erzeugen (critical nur für fopen)
     FILE *tempDiffFile = NULL;
-    #pragma omp critical
+#pragma omp critical
     {
         tempDiffFile = fopen(tempDiffFileName, "w");
     }
 
     if (!tempDiffFile) {
-        printf("Error: Datei kann nicht erstellt werden!\n");
+        printf("Error: Datei kann nicht erstellt werden: %s\n", tempDiffFileName);
         fclose(inputFile);
         return;
     }
@@ -122,7 +124,7 @@ void tempDiffStation(const char *fileName)
     // Initialisiere Predecessor 
     pred.jahr = 2022;
     pred.monat = 1;
-    pred.tag = 1;  
+    pred.tag = 1;
     pred.stunde = 0;
     pred.minute = 0;
     pred.temperatur = 0.0;
@@ -138,7 +140,7 @@ void tempDiffStation(const char *fileName)
                        &rec.stunde, &rec.minute,
                        &rec.temperatur);
 
-        // Nur vollständige stündliche Messungen berücksichtigen               
+        // Nur vollständige stündliche Messungen berücksichtigen
         if (n == 6 && rec.minute == 0)
         {
             tempDiff(&rec, &pred);
@@ -150,47 +152,27 @@ void tempDiffStation(const char *fileName)
 
             count++;
 
-            if (count >= Print) 
+            if (count >= Print)
             {
-                // printf("Printed %d",count); (für Debug)
                 break;
             }
         }
     }
 
-
     fclose(inputFile);
     fclose(tempDiffFile);
 
-
-    // TEMP_DIFF Datei unbennenen
-    char shortName[200];
-    strcpy(shortName, fileName);
-    char *firstUnderscore = strchr(shortName, '_');
-    if (firstUnderscore) memmove(shortName, firstUnderscore + 1, strlen(firstUnderscore));
-    char *suffix = strstr(shortName, "_2022");
-    if (suffix) *suffix = '\0';
-
-    char renamedFile[300];
-    snprintf(renamedFile, sizeof(renamedFile), "%s_TEMP_DIFF.csv", shortName);
-
-#pragma omp critical
-    {
-        rename(tempDiffFileName, renamedFile); // kritische Sektion
-    }
-
-    printf("Temp-Diff gespeichert in %s\n", renamedFile);
+    printf("Temp-Diff gespeichert in %s\n", tempDiffFileName);
 }
 
 float tempDiff(WetterStation *current, WetterStation *pred)
 {
     current->tempDiff = current->temperatur - pred->temperatur;
     *pred = *current;
-    return current->tempDiff; 
+    return current->tempDiff;
 }
 
-// 1.2.:
-
+// 1.2. Nachbarstruktur
 typedef struct {
     char nord[50];
     char sued[50];
@@ -200,11 +182,9 @@ typedef struct {
 
 Nachbar getNachbar(const char *station)
 {
-
     Nachbar nachbar = {"", "", "", ""};
-    
-    // Nachbarn anhand Karte ermitteln
 
+    // Nachbarn anhand Karte ermitteln
     if(strstr(station, "Gatow-1"))
     {
         strcpy(nachbar.nord, "Pichelsdorf-1");
@@ -227,7 +207,7 @@ Nachbar getNachbar(const char *station)
     else if(strstr(station, "Wannsee-1"))
     {
         strcpy(nachbar.nord, "Gatow-1");
-        strcpy(nachbar.ost, "Botanischer-Garten-1"); 
+        strcpy(nachbar.ost, "Botanischer-Garten-1");
     }
     else if(strstr(station, "Planetarium-1"))
     {
@@ -260,11 +240,11 @@ Nachbar getNachbar(const char *station)
     }
     else if(strstr(station, "Mueggelsee-1"))
     {
-        
+        // keine Nachbarn definiert
     }
     else if(strstr(station, "Messturm-2")) //no temp
     {
-        
+        // keine Nachbarn
     }
     else if(strstr(station, "Moabit-1"))
     {
@@ -283,7 +263,7 @@ void rechneMittelwert(const char *station)
 
     FILE *base = fopen(baseFile, "r");
     if (!base) {
-        printf("Kann %s nicht öffnen\n", baseFile);
+        printf("Kann %s nicht öffnen, wird übersprungen\n", baseFile);
         return;
     }
 
@@ -306,9 +286,20 @@ void rechneMittelwert(const char *station)
 
     char outFile[200];
     snprintf(outFile, sizeof(outFile), "%s_NEIGHBOUR_MEAN.csv", station);
-    FILE *out = fopen(outFile, "w");
 
-    
+    FILE *out = NULL;
+#pragma omp critical
+    {
+        out = fopen(outFile, "w");
+    }
+    if(!out) {
+        // Sollte selten passieren; informieren und sauber zurück
+        for (int i = 0; i < 4; i++) if (files[i]) fclose(files[i]);
+        fclose(base);
+        printf("Kann %s nicht erstellt werden, überspringe Mittelwert-Berechnung\n", outFile);
+        return;
+    }
+
     fprintf(out, "Date	      Time       MeanTemperature\n");
 
     char line[300];
@@ -328,16 +319,15 @@ void rechneMittelwert(const char *station)
         for (int i = 0; i < 4; i++) {
             if (files[i]) {
                 char nline[300], d[20], ti[20];
-                float t, diff;
+                float t, diff2;
                 if (fgets(nline, sizeof(nline), files[i]) &&
-                    sscanf(nline, "%s %s %f %f", d, ti, &t, &diff) == 4) {
-                    sum += diff;
+                    sscanf(nline, "%s %s %f %f", d, ti, &t, &diff2) == 4) {
+                    sum += diff2;
                     count++;
                 }
             }
         }
 
-        
         fprintf(out, "%s    %s      %.3f\n", date, time, sum / count);
     }
 
@@ -360,30 +350,31 @@ void mergeCSV (const char *station)
     FILE *fTDiff = fopen(tempDiffFile, "r");
     FILE *fMean = fopen(meanFile, "r");
 
-    if (!fTDiff || !fMean)
+    if(!fTDiff || !fMean)
     {
+        // genauer ausgeben, was fehlt
         if (!fTDiff && !fMean) {
-            printf("%s fehlt: sowohl %s als auch %s fehlen, merge unmoeglich\n",
-                   station, tempDiffFile, meanFile);
+            printf("%s fehlt: sowohl %s_TEMP_DIFF.csv als auch %s_NEIGHBOUR_MEAN.csv fehlen, merge unmoeglich\n", station, station, station);
         } else if (!fTDiff) {
-            printf("%s fehlt: %s fehlt, merge unmoeglich\n", station, tempDiffFile);
-        } else { // !fMean 
-            printf("%s fehlt: %s fehlt, merge unmoeglich\n", station, meanFile);
+            printf("%s fehlt: %s_TEMP_DIFF.csv fehlt, merge unmoeglich\n", station, station);
+            if(fMean) fclose(fMean);
+        } else { // !fMean
+            printf("%s fehlt: %s_NEIGHBOUR_MEAN.csv fehlt, merge unmoeglich\n", station, station);
+            if(fTDiff) fclose(fTDiff);
         }
-
-        if (fTDiff) fclose(fTDiff);
-        if (fMean)  fclose(fMean);
         return;
     }
 
-    FILE *fFinal = fopen(finalFile, "w");
+    FILE *fFinal = NULL;
+#pragma omp critical
+    {
+        fFinal = fopen(finalFile, "w");
+    }
     if (!fFinal)
     {
         printf("%s konnte nicht erstellt werden\n", finalFile);
-
         fclose(fTDiff);
         fclose(fMean);
-
         return;
     }
 
@@ -412,8 +403,6 @@ void mergeCSV (const char *station)
         }
 
         fprintf(fFinal, "%s 	%s    %6.1f     		%6.1f      		    %6.1f\n", date, time, tempBase, diff, mean);
-        
-        
     }
 
     fclose(fTDiff);
@@ -425,27 +414,14 @@ void mergeCSV (const char *station)
     remove(meanFile);
 
     printf("Merged gespeichert in %s\n", finalFile);
-
 }
-
-
-/* 2. Aufgabe mit OpenMP
-
-Grund: Wir haben OpenMP verwendet, weil die Berechnungen der einzelnen Wetterstationen weitgehend unabhängig sind und sich daher sehr einfach und effizient 
-im Shared-Memory-Modell parallelisieren lassen. Außerdem ermöglicht OpenMP eine schnelle Implementierung mit nur wenigen Codeanpassungen, 
-was es für diese Aufgabe besonders geeignet macht.
-
-
-Idee: 1.: Wir können alle _TEMP_DIFF.csv für jede Station gleichzeitig parallel erstellen, da wir keine Abhängigkeiten haben
-Danach 2.: Wir können nun alle _NEIGHBOUR_MEAN.csv für jede Station gleichzeitig parallel erstellen, da für jede Station nun die Nachbarwerte vorlegen
-Und am Ende 3.: Wir können nun die jewilige _TEMP_DIFF.csv & _NEIGHBOUR_MEAN.csv der Stationen mergen und erstellen Parallel für jede Station _FINAL.csv */
 
 // Main
 int main(void)
 {
 #if Aufgabe ==  1
 
-    // tracke böntigte Zeit für Aufgabe 3
+    // tracke benötigte Zeit für Aufgabe 3
     double start = omp_get_wtime();
 
     DIR *d;
@@ -465,15 +441,17 @@ int main(void)
             strstr(dir->d_name, "_FINAL.csv") == NULL)
         {
             printf("\n>>> Verarbeite Datei: %s\n", dir->d_name);
-            tempDiffStation(dir->d_name);
 
-            // Stationsnamen bereinigen
+            // Stationsnamen bereinigen (z.B. "02_Gatow-1_2022.csv" -> "Gatow-1")
             char station[200];
-            strcpy(station, dir->d_name);
+            strncpy(station, dir->d_name, sizeof(station));
+            station[sizeof(station)-1] = '\0';
             char *firstUnderscore = strchr(station, '_');
             if (firstUnderscore) memmove(station, firstUnderscore + 1, strlen(firstUnderscore));
             char *suffix = strstr(station, "_2022");
             if (suffix) *suffix = '\0';
+
+            tempDiffStation(dir->d_name, station);
 
             printf(">>> Berechne Mittelwert: %s\n", station);
             rechneMittelwert(station);
@@ -486,13 +464,13 @@ int main(void)
 
     double end = omp_get_wtime();
     printf("Zeit: %f\n", end - start);
-    
+
     printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.\n");
     return 0;
 
 #elif Aufgabe ==  2
 
-    // tracke böntigte Zeit für Aufgabe 3
+    // tracke benötigte Zeit für Aufgabe 3
     double start = omp_get_wtime();
 
     DIR *d;
@@ -504,9 +482,9 @@ int main(void)
         return 1;
     }
 
-    const int MAXFILES = 14;
+    const int MAXFILES = 64;
     char *files[MAXFILES];
-    char *stations[MAXFILES];    
+    char *stations[MAXFILES];
     int fileCount = 0;
 
     // Durchlaufe alle Dateien im aktuellen Ordner
@@ -516,21 +494,18 @@ int main(void)
             strstr(dir->d_name, "_NEIGHBOUR_MEAN.csv") == NULL &&
             strstr(dir->d_name, "_FINAL.csv") == NULL)
         {
-            // Anstatt jede Datei direkt zu verarbeiten speichern wir diese 
             files[fileCount] = strdup(dir->d_name);
-            
-            
 
             // Stationsnamen bereinigen
             char station[200];
-            strcpy(station, dir->d_name);
+            strncpy(station, dir->d_name, sizeof(station));
+            station[sizeof(station)-1] = '\0';
             char *firstUnderscore = strchr(station, '_');
             if (firstUnderscore) memmove(station, firstUnderscore + 1, strlen(firstUnderscore));
             char *suffix = strstr(station, "_2022");
             if (suffix) *suffix = '\0';
 
             stations[fileCount] = strdup(station);
-
 
             fileCount++;
             if (fileCount >= MAXFILES) break;
@@ -543,48 +518,49 @@ int main(void)
         return 0;
     }
 
-    // 1. Erzeuge alle _TEMP_DIFF.csv für jede Station gleichzeitig Parallel 
-
-    #pragma omp parallel for
-    for (int i = 0; i < fileCount; i++) 
-    {   
+    // 1. Erzeuge alle _TEMP_DIFF.csv für jede Station gleichzeitig Parallel
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < fileCount; i++)
+    {
         printf(">>> Thread %d Verarbeitet die Datei: %s \n", omp_get_thread_num(), files[i]);
-        tempDiffStation(files[i]);
+        tempDiffStation(files[i], stations[i]);
     }
 
-    // 2. Erzeuge nun alle _NEIGHBOUR_MEAN.csv für jede Station gleichzeitig Parallel 
-
-    #pragma omp parallel for
+    // 2. Erzeuge nun alle _NEIGHBOUR_MEAN.csv für jede Station gleichzeitig Parallel
+    #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < fileCount; i++)
     {
         printf(">>> Thread %d berechnet Mittelwert: %s \n", omp_get_thread_num(), stations[i]);
         rechneMittelwert(stations[i]);
-        
     }
 
     // 3. Merge nun die _TEMP_DIFF.csv & _NEIGHBOUR_MEAN.csv jeder Stationen zu _FINAL.csv für jede Station gleichzeitig Parallel
-
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < fileCount; i++)
     {
         printf(">>> Thread %d Merges: %s \n", omp_get_thread_num(), stations[i]);
         mergeCSV(stations[i]);
-        
     }
 
     double end = omp_get_wtime();
     printf("Zeit: %f\n", end - start);
 
     printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.\n");
+
+    // aufräumen
+    for (int i = 0; i < fileCount; i++) {
+        free(files[i]);
+        free(stations[i]);
+    }
+
     return 0;
-    
 
 #else
-  
+
     printf("Diese Aufgabe existiert nicht. Schreibe z.B. make Aufgabe1\n");
     return 1;
 
-    #endif
+#endif
 
     return 0;
 }
