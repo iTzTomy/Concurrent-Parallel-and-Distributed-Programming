@@ -407,6 +407,17 @@ void mergeCSV (const char *station)
     printf("Merged gespeichert in %s\n", finalFile);
 }
 
+/* 2. Aufgabe mit OpenMP
+
+Grund: Wir haben OpenMP verwendet, weil die Berechnungen der einzelnen Wetterstationen weitgehend unabhängig sind und sich daher sehr einfach und effizient 
+im Shared-Memory-Modell parallelisieren lassen. Außerdem ermöglicht OpenMP eine schnelle Implementierung mit nur wenigen Codeanpassungen, 
+was es für diese Aufgabe besonders geeignet macht.
+
+
+Idee: 1.: Wir können alle _TEMP_DIFF.csv für jede Station gleichzeitig parallel erstellen, da wir keine Abhängigkeiten haben
+Danach 2.: Wir können nun alle _NEIGHBOUR_MEAN.csv für jede Station gleichzeitig parallel erstellen, da für jede Station nun die Nachbarwerte vorlegen
+Und am Ende 3.: Wir können nun die jewilige _TEMP_DIFF.csv & _NEIGHBOUR_MEAN.csv der Stationen mergen und erstellen Parallel für jede Station _FINAL.csv */
+
 // Main
 int main(void)
 {
