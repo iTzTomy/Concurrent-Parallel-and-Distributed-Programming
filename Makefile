@@ -9,7 +9,7 @@ Aufgabe1:
 
 Aufgabe2:
 	gcc -fopenmp -DAufgabe=2 7UZ.c -o Aufgabe2
-	read -p "Enter number of threads for Aufgabe1: " THREADS
+	read -p "Enter number of threads for Aufgabe2: " THREADS
 	export OMP_NUM_THREADS=$THREADS
 	./Aufgabe2
 	make clean
