@@ -338,7 +338,7 @@ void rechneMittelwert(const char *station)
     printf("Nachbar-Mittelwert gespeichert in %s\n", outFile);
 }
 
-void mergeCSV (const char *station)
+void mergeCSV(const char *station)
 {
     char tempDiffFile[200];
     char meanFile[200];
@@ -350,74 +350,65 @@ void mergeCSV (const char *station)
     FILE *fTDiff = fopen(tempDiffFile, "r");
     FILE *fMean = fopen(meanFile, "r");
 
-    if(!fTDiff || !fMean)
+    if (!fTDiff || !fMean)
     {
-        printf("%s fehlt, merge unmoeglich \n", station);
-        if(fTDiff)
-        {
-            fclose(fTDiff);
-        }
-        if(fMean)
-        {
-            fclose(fMean);
-        }
-
+        printf("%s fehlt, merge unmoeglich\n", station);
+        if (fTDiff) fclose(fTDiff);
+        if (fMean) fclose(fMean);
         return;
     }
 
-#pragma omp critical
-{
-    FILE *fFinal = fopen(finalFile, "w");
+    // Finale Datei öffnen **einmal**, muss im critical block sein
+    FILE *fFinal;
+    #pragma omp critical
+    {
+        fFinal = fopen(finalFile, "w");
+        if (fFinal)
+            fprintf(fFinal, "Date	    Time     Temp (°C) 	   Temp Difference (°C)     Neighbour Temp Difference Mean\n");
+        else
+            printf("%s konnte nicht erstellt werden\n", finalFile);
+    }
+
     if (!fFinal)
     {
-        printf("%s konnte nicht erstellt werden\n", finalFile);
-
         fclose(fTDiff);
         fclose(fMean);
-
         return;
     }
-
-    fprintf(fFinal, "Date	    Time     Temp (°C) 	   Temp Difference (°C)     Neighbour Temp Difference Mean\n");
 
     char line1[300];
     char line2[300];
 
-    fgets(line1, sizeof(line1), fTDiff);
+    fgets(line1, sizeof(line1), fTDiff); // Header überspringen
     fgets(line2, sizeof(line2), fMean);
 
-    // Zeile für Zeile zusammenführen
+    // Zeilen zusammenführen
     while (fgets(line1, sizeof(line1), fTDiff) && fgets(line2, sizeof(line2), fMean))
     {
         char date[20], time[20];
         float tempBase, diff, mean;
 
-        if (sscanf(line1, "%s %s %f %f", date, time, &tempBase, &diff) != 4)
-        {
-            continue;
-        }
+        if (sscanf(line1, "%s %s %f %f", date, time, &tempBase, &diff) != 4) continue;
+        if (sscanf(line2, "%s %s %f", date, time, &mean) != 3) continue;
 
-        if (sscanf(line2, "%s %s %f", date, time, &mean) != 3)
+        // Schreiben in finale Datei synchronisieren
+        #pragma omp critical
         {
-            continue;
+            fprintf(fFinal, "%s 	%s    %6.1f     		%6.1f      		    %6.1f\n", date, time, tempBase, diff, mean);
         }
-
-        fprintf(fFinal, "%s 	%s    %6.1f     		%6.1f      		    %6.1f\n", date, time, tempBase, diff, mean);
-        
-        
     }
 
+    fclose(fFinal);
     fclose(fTDiff);
     fclose(fMean);
-    fclose(fFinal);
-}
+
     // Temporäre Dateien löschen
     remove(tempDiffFile);
     remove(meanFile);
 
     printf("Merged gespeichert in %s\n", finalFile);
-
 }
+
 
 
 /* 2. Aufgabe mit OpenMP
