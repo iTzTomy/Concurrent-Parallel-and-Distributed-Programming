@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,13 +20,6 @@ typedef struct {
 
 float tempDiff(WetterStation *current, WetterStation *pred);
 
-/*
- * tempDiffStation
- * fileName: original input filename (z.B. "02_Gatow-1_2022.csv")
- * station: cleaned station name used for outputs (z.B. "Gatow-1")
- *
- * Produziert direkt: "<station>_TEMP_DIFF.csv"
- */
 void tempDiffStation(const char *fileName, const char *station)
 {
     char csvFormat[200];
@@ -82,7 +74,7 @@ void tempDiffStation(const char *fileName, const char *station)
         strcpy(csvFormat, "%d %d %d %d %d %*d %*d %*d %f");
     }
 
-    // Ausgabedatei-Namen erzeugen (mit cleaned station name, kein rename später)
+    // Ausgabedatei-Namen erzeugen (mit cleaned station name)
     char tempDiffFileName[300];
     snprintf(tempDiffFileName, sizeof(tempDiffFileName), "%s_TEMP_DIFF.csv", station);
 
@@ -293,7 +285,6 @@ void rechneMittelwert(const char *station)
         out = fopen(outFile, "w");
     }
     if(!out) {
-        // Sollte selten passieren; informieren und sauber zurück
         for (int i = 0; i < 4; i++) if (files[i]) fclose(files[i]);
         fclose(base);
         printf("Kann %s nicht erstellt werden, überspringe Mittelwert-Berechnung\n", outFile);
@@ -433,16 +424,21 @@ int main(void)
         return 1;
     }
 
-    // Durchlaufe alle Dateien im aktuellen Ordner
+    const int MAXFILES = 64;
+    char *files[MAXFILES];
+    char *stations[MAXFILES];
+    int fileCount = 0;
+
+    // Alle CSV-Dateien sammeln
     while ((dir = readdir(d)) != NULL) {
         if (strstr(dir->d_name, ".csv") != NULL &&
             strstr(dir->d_name, "_TEMP_DIFF.csv") == NULL &&
             strstr(dir->d_name, "_NEIGHBOUR_MEAN.csv") == NULL &&
             strstr(dir->d_name, "_FINAL.csv") == NULL)
         {
-            printf("\n>>> Verarbeite Datei: %s\n", dir->d_name);
+            files[fileCount] = strdup(dir->d_name);
 
-            // Stationsnamen bereinigen (z.B. "02_Gatow-1_2022.csv" -> "Gatow-1")
+            // Stationsnamen bereinigen
             char station[200];
             strncpy(station, dir->d_name, sizeof(station));
             station[sizeof(station)-1] = '\0';
@@ -451,21 +447,48 @@ int main(void)
             char *suffix = strstr(station, "_2022");
             if (suffix) *suffix = '\0';
 
-            tempDiffStation(dir->d_name, station);
+            stations[fileCount] = strdup(station);
 
-            printf(">>> Berechne Mittelwert: %s\n", station);
-            rechneMittelwert(station);
-
-            mergeCSV(station);
+            fileCount++;
+            if (fileCount >= MAXFILES) break;
         }
     }
-
     closedir(d);
+
+    if (fileCount == 0) {
+        printf(">>> Keine Eingabe-CSV-Dateien gefunden.\n");
+        return 0;
+    }
+
+    // Erzeuge alle _TEMP_DIFF.csv Dateien
+    for (int i = 0; i < fileCount; i++) {
+        printf(">>> Verarbeite TEMP_DIFF fuer Datei: %s\n", files[i]);
+        tempDiffStation(files[i], stations[i]);
+    }
+
+    // Berechne alle _NEIGHBOUR_MEAN.csv Dateien
+    for (int i = 0; i < fileCount; i++) {
+        printf(">>> Berechne Mittelwert fuer Station: %s\n", stations[i]);
+        rechneMittelwert(stations[i]);
+    }
+
+    // Merge alle _TEMP_DIFF.csv & _NEIGHBOUR_MEAN.csv zu _FINAL.csv
+    for (int i = 0; i < fileCount; i++) {
+        printf(">>> Mergen fuer Station: %s\n", stations[i]);
+        mergeCSV(stations[i]);
+    }
 
     double end = omp_get_wtime();
     printf("Zeit: %f\n", end - start);
 
     printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.\n");
+
+    // Aufräumen
+    for (int i = 0; i < fileCount; i++) {
+        free(files[i]);
+        free(stations[i]);
+    }
+
     return 0;
 
 #elif Aufgabe ==  2
