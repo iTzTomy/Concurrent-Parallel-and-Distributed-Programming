@@ -5,7 +5,7 @@ THREADS ?= 4
 
 
 Aufgabe1:
-	gcc -fopenmp -DAufgabe=1 7UZ.c -o Aufgabe1
+    gcc -fopenmp -DAufgabe=1 7UZ.c -o Aufgabe1
     OMP_NUM_THREADS=$(THREADS) ./Aufgabe1
     make clean
 
