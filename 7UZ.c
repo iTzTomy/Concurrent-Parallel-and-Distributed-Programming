@@ -532,6 +532,8 @@ int main(void)
         return 0;
     }
 
+    #pragma omp barrier
+
     // 1. Erzeuge alle _TEMP_DIFF.csv für jede Station gleichzeitig Parallel 
 
     #pragma omp parallel for
@@ -540,6 +542,8 @@ int main(void)
         printf(">>> Thread %d Verarbeitet die Datei: %s \n", omp_get_thread_num(), files[i]);
         tempDiffStation(files[i]);
     }
+
+    #pragma omp barrier
 
     // 2. Erzeuge nun alle _NEIGHBOUR_MEAN.csv für jede Station gleichzeitig Parallel 
 
@@ -550,6 +554,8 @@ int main(void)
         rechneMittelwert(stations[i]);
         
     }
+
+    #pragma omp barrier
 
     // 3. Merge nun die _TEMP_DIFF.csv & _NEIGHBOUR_MEAN.csv jeder Stationen zu _FINAL.csv für jede Station gleichzeitig Parallel
 
