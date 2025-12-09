@@ -2,7 +2,6 @@
 #include <string.h>
 #include <dirent.h>
 #include <omp.h>
-#include <stdlib.h>
 
 // 7. Übungszettel - NPVP
 // Hristo Popovski & Tomy Duong
@@ -147,7 +146,7 @@ void tempDiffStation(const char *fileName)
 
             if (count >= Print) 
             {
-                printf("Printed %d",count);
+                // printf("Printed %d",count); (für Debug)
                 break;
             }
         }
@@ -353,7 +352,7 @@ void mergeCSV (const char *station)
 
     if(!fTDiff || !fMean)
     {
-        printf("%s fehlt, merge unmoeglich", station);
+        printf("%s fehlt, merge unmoeglich \n", station);
         if(fTDiff)
         {
             fclose(fTDiff);
@@ -434,6 +433,10 @@ Und am Ende 3.: Wir können nun die jewilige _TEMP_DIFF.csv & _NEIGHBOUR_MEAN.cs
 int main(void)
 {
 #if Aufgabe ==  1
+
+    // tracke böntigte Zeit für Aufgabe 3
+    double start = omp_get_wtime();
+
     DIR *d;
     struct dirent *dir;
 
@@ -470,44 +473,56 @@ int main(void)
 
     closedir(d);
 
-    printf("Output CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.");
+    double end = omp_get_wtime();
+    printf("Zeit: %f\n", end - start);
+    
+    printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.\n");
     return 0;
 
-#elif Aufgabe == 2
-    DIR *d = opendir(".");
+#elif Aufgabe ==  2
+
+    // tracke böntigte Zeit für Aufgabe 3
+    double start = omp_get_wtime();
+
+    DIR *d;
+    struct dirent *dir;
+
+    d = opendir(".");
     if (!d) {
         printf("Verzeichnis kann nicht geoeffnet werden!\n");
         return 1;
     }
 
-    const int MAXFILES = 20;
+    const int MAXFILES = 14;
     char *files[MAXFILES];
-    char *stations[MAXFILES];
+    char *stations[MAXFILES];    
     int fileCount = 0;
 
-    struct dirent *dir;
-
-    // This works on ALL GCC versions, including prehistoric MinGW
-    memset(files,    0, sizeof(files));
-    memset(stations, 0, sizeof(stations));
-
-    while ((dir = readdir(d)) != NULL && fileCount < MAXFILES) {
+    // Durchlaufe alle Dateien im aktuellen Ordner
+    while ((dir = readdir(d)) != NULL) {
         if (strstr(dir->d_name, ".csv") != NULL &&
             strstr(dir->d_name, "_TEMP_DIFF.csv") == NULL &&
             strstr(dir->d_name, "_NEIGHBOUR_MEAN.csv") == NULL &&
             strstr(dir->d_name, "_FINAL.csv") == NULL)
         {
+            // Anstatt jede Datei direkt zu verarbeiten speichern wir diese 
             files[fileCount] = strdup(dir->d_name);
+            
+            
 
-            char temp[200];
-            strcpy(temp, dir->d_name);
-            char *p = strchr(temp, '_');
-            if (p) memmove(temp, p + 1, strlen(p));
-            p = strstr(temp, "_2022");
-            if (p) *p = '\0';
+            // Stationsnamen bereinigen
+            char station[200];
+            strcpy(station, dir->d_name);
+            char *firstUnderscore = strchr(station, '_');
+            if (firstUnderscore) memmove(station, firstUnderscore + 1, strlen(firstUnderscore));
+            char *suffix = strstr(station, "_2022");
+            if (suffix) *suffix = '\0';
 
-            stations[fileCount] = strdup(temp);
+            stations[fileCount] = strdup(station);
+
+
             fileCount++;
+            if (fileCount >= MAXFILES) break;
         }
     }
     closedir(d);
@@ -517,7 +532,8 @@ int main(void)
         return 0;
     }
 
-   
+    // 1. Erzeuge alle _TEMP_DIFF.csv für jede Station gleichzeitig Parallel 
+
     #pragma omp parallel for
     for (int i = 0; i < fileCount; i++) 
     {   
@@ -525,30 +541,39 @@ int main(void)
         tempDiffStation(files[i]);
     }
 
+    // 2. Erzeuge nun alle _NEIGHBOUR_MEAN.csv für jede Station gleichzeitig Parallel 
+
     #pragma omp parallel for
     for (int i = 0; i < fileCount; i++)
     {
         printf(">>> Thread %d berechnet Mittelwert: %s \n", omp_get_thread_num(), stations[i]);
         rechneMittelwert(stations[i]);
+        
     }
+
+    // 3. Merge nun die _TEMP_DIFF.csv & _NEIGHBOUR_MEAN.csv jeder Stationen zu _FINAL.csv für jede Station gleichzeitig Parallel
 
     #pragma omp parallel for
     for (int i = 0; i < fileCount; i++)
     {
         printf(">>> Thread %d Merges: %s \n", omp_get_thread_num(), stations[i]);
         mergeCSV(stations[i]);
+        
     }
 
-    // Clean up
-    for (int i = 0; i < fileCount; i++) {
-        free(files[i]);
-        free(stations[i]);
-    }
+    double end = omp_get_wtime();
+    printf("Zeit: %f\n", end - start);
+
+    printf("Final CSV's fuer alle Stationen erstellt, ausser fuer Messturm-2, denn dafuer gibt keine Temperaturwerte.\n");
+    return 0;
+    
 
 #else
-    printf("Diese Aufgabe existiert nicht. Schreibe z.B. make Aufgabe=2\n");
+  
+    printf("Diese Aufgabe existiert nicht. Schreibe z.B. make Aufgabe1\n");
     return 1;
-#endif
+
+    #endif
 
     return 0;
 }
