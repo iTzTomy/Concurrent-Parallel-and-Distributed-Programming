@@ -360,18 +360,19 @@ void mergeCSV (const char *station)
     FILE *fTDiff = fopen(tempDiffFile, "r");
     FILE *fMean = fopen(meanFile, "r");
 
-    if(!fTDiff || !fMean)
+    if (!fTDiff || !fMean)
     {
-        printf("%s fehlt, merge unmoeglich \n", station);
-        if(fTDiff)
-        {
-            fclose(fTDiff);
-        }
-        if(fMean)
-        {
-            fclose(fMean);
+        if (!fTDiff && !fMean) {
+            printf("%s fehlt: sowohl %s als auch %s fehlen, merge unmoeglich\n",
+                   station, tempDiffFile, meanFile);
+        } else if (!fTDiff) {
+            printf("%s fehlt: %s fehlt, merge unmoeglich\n", station, tempDiffFile);
+        } else { // !fMean 
+            printf("%s fehlt: %s fehlt, merge unmoeglich\n", station, meanFile);
         }
 
+        if (fTDiff) fclose(fTDiff);
+        if (fMean)  fclose(fMean);
         return;
     }
 
