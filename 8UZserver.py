@@ -1,4 +1,4 @@
-# 7. Übungszettel - NPVP
+# 8. Übungszettel - NPVP
 # Hristo Popovski & Tomy Duong
 
 import socket
