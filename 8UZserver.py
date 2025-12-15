@@ -31,7 +31,7 @@ PORT2 = 65433
 answers = ["Go on.", "Fine, please go on.", "Come, elucidate your thoughts.", "Damn that's crazy!", "Please enrich your active vocabulary.", "You haven't learnt much English in school, have you?", "Is this a new abbreviation I don't know about?", 
            "That's too brief.", "Do you suffer from sleeplessness?", "Why did you redeem it?", "Do you experience problems to express yourself sometimes?", "Not an easy question ...", "Is this an important question for you?", "Neither ...", "But you just said that."]
 
-def run_Server2():
+def run_server2():
     
      with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT2))
@@ -58,11 +58,13 @@ def handle_client(conn, addr):
             while True:
                 question = conn.recv(1024)
                 if not question:
+                    print(f"Disconnected from {addr}")
                     break
                 text = question.decode().strip()
                 if text.lower() == 'exit':
                     conn.sendall("Goodbye!".encode())
+                    print(f"Disconnected from {addr}")
                     break
                 conn.sendall(answers[random.randrange(len(answers))].encode()) # Zufällig vom Array ausgewählte Antwort
 
-# run_Server2()
+# run_server2()
