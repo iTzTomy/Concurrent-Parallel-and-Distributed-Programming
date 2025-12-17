@@ -53,7 +53,7 @@ def run_client3():
 
         print(f"Connected as Client {client_id}")
 
-        Thread(target=receive_message, args=(s,)).start()
+        Thread(target=receive_message, args=(s,), daemon=True).start()
 
         while True:
             text = input("Say something (or type 'exit' to leave): ")
@@ -65,7 +65,7 @@ def run_client3():
             s.sendall(json.dumps(msg).encode()) # von Dictionary zum String konvertieren 
 
             if text.lower() == "exit":
-                raise KeyboardInterrupt 
+                break
                 
             
 run_client3()
