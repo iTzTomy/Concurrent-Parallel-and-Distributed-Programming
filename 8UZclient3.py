@@ -43,7 +43,7 @@ def receive_message(sock):
             clear_screen()
             
             for m in messages:
-                print(f"{m["lamport"]}, {m["local_time"]} {m["client_id"]}: {m["message"]} ")
+                print(f"{m['lamport']}, {m['local_time']} {m['client_id']}: {m['message']} ")
         except:
             break
 
