@@ -44,7 +44,6 @@ def receive_message(sock):
             
             for m in messages:
                 print(f"{m['lamport']}, {m['local_time']} {m['client_id']}: {m['message']} ")
-            print("> ", end="", flush=True)
         except:
             break
 
@@ -56,8 +55,6 @@ def run_client3():
 
         Thread(target=receive_message, args=(s,), daemon=True).start()
 
-        print("> ", end="", flush=True)
-
         while True:
             text = input("Say something (or type 'exit' to leave): ")
             global lamport
@@ -68,7 +65,7 @@ def run_client3():
             s.sendall(json.dumps(msg).encode()) # von Dictionary zum String konvertieren 
 
             if text.lower() == "exit":
-                raise KeyboardInterrupt 
+                break
                 
             
 run_client3()
