@@ -55,26 +55,32 @@ def handle_client(conn, addr):
 def run_server3():
     
     global lamport
+    
+    try:
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, PORT3))
-        s.listen()
-        
-        print(f"Server listening on {HOST}:{PORT3}")
-        
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((HOST, PORT3))
+            s.listen()
+            s.settimeout(1.0)
+            
+            print(f"Server listening on {HOST}:{PORT3}")
+            print("Press Ctrl+C to stop the server")
+            
+            while True:
+                conn, addr = s.accept()
+                # erstelle Thread für jeden Client
+                Thread(
+                    target=handle_client,
+                    args=(conn, addr),
+                    daemon=True
+                ).start()
 
-        while True:
-            conn, addr = s.accept()
-            # erstelle Thread für jeden Client
-            Thread(
-                target=handle_client,
-                args=(conn, addr),
-                daemon=True
-            ).start()
-
-
-
-
+    except KeyboardInterrupt:
+            print("Shutting down server...")
+            for c in clients[:]:
+                c.close()
+            clients.clear()
+            print("Server stopped.")
 
 run_server3()
 
