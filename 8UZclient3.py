@@ -54,7 +54,7 @@ def run_client3():
 
         print(f"Connected as Client {client_id}")
 
-        Thread(target=receive_message, args=(s,)).start()
+        Thread(target=receive_message, args=(s,), daemon=True).start()
 
         print("> ", end="", flush=True)
 
