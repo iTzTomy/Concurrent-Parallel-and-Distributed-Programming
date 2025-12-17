@@ -9,3 +9,9 @@ client1:
 
 client2:
 	python 8UZclient2.py
+
+client3:
+	python 8UZclient3.py
+
+client3:
+	python 8UZclient3.py
