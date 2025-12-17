@@ -8,6 +8,7 @@ import uuid
 import random 
 import json
 import os
+import sys
 
 # 4.1. TCP-Client:
 HOST = "127.0.0.1"
@@ -65,7 +66,8 @@ def run_client3():
             s.sendall(json.dumps(msg).encode()) # von Dictionary zum String konvertieren 
 
             if text.lower() == "exit":
-                break
+                sys.exit(0) 
+                
             
 run_client3()
 
