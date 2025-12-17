@@ -52,25 +52,36 @@ def handle_client(conn, addr):
                     broadcast()
 
 
-def run_client3():
+def run_server3():
+    global lamport
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT3))
-
-        print(f"Connected as Client {client_id}")
-
-        Thread(target=receive_message, args=(s,), daemon=True).start()
-
-        while True:
-            text = input()
-            global lamport
-            lamport += 1
-
-            msg = {"lamport" : lamport, "client_id" : client_id, "local_time" : time_calc(), "message" : text}
+        s.bind((HOST, PORT3))
+        s.listen()
+        s.settimeout(1.0)
         
-            s.sendall(json.dumps(msg).encode()) # von Dictionary zum String konvertieren 
-
-            if text.lower() == "exit":
-                break
+        print(f"Server listening on {HOST}:{PORT3}")
+        print("Press Ctrl+C to stop the server")
+        
+        try:
+            while True:
+                try:
+                    conn, addr = s.accept()
+                except socket.timeout:
+                    continue
+                
+                Thread(
+                    target=handle_client,
+                    args=(conn, addr),
+                    daemon=True
+                ).start()
+                
+        except KeyboardInterrupt:
+            print("Shutting down server...")
+            for c in clients[:]:
+                c.close()
+            clients.clear()
+            print("Server stopped.")
 
 run_server3()
 
