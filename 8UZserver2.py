@@ -1,31 +1,12 @@
 # 8. Übungszettel - NPVP
 # Hristo Popovski & Tomy Duong
 
-import socket
-
-# 2.1. TCP-Server:
-
-HOST = "127.0.0.1"
-PORT = 65432
-
-def run_server():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, PORT))
-        s.listen()
-        print(f"Server listening on {HOST}:{PORT}")
-        conn, addr = s.accept()
-        with conn:
-                print(f"Connected by {addr}")
-                # 2.1. Hello World
-                conn.sendall("Hello World.".encode())
-                print(f"Sent \"Hello World.\" to {addr}")
-
-# run_server()
-
 # 3.1. TCP-Server:
+
+import socket
 from threading import Thread
 import random
-
+HOST = "127.0.0.1"
 PORT2 = 65433
 
 answers = ["Go on.", "Fine, please go on.", "Come, elucidate your thoughts.", "Damn that's crazy!", "Please enrich your active vocabulary.", "You haven't learnt much English in school, have you?", "Is this a new abbreviation I don't know about?", 
