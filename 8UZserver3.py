@@ -69,7 +69,7 @@ def run_server3():
                     conn, addr = s.accept()
                 except socket.timeout:
                     continue
-                
+                # erstelle Thread für jeden Client
                 Thread(
                     target=handle_client,
                     args=(conn, addr),
